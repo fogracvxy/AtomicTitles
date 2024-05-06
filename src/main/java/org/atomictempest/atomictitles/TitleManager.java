@@ -122,7 +122,16 @@ public class TitleManager {
         // Save the default configuration to the file
         saveTitlesConfig();
     }
+    public void setPlayerPreferredColor(Player player, ChatColor color) {
+        UUID uuid = player.getUniqueId();
+        playerColors.put(uuid, color);
+        savePlayerTitlesConfig(); // Save player colors to persistent storage
+    }
 
+    public ChatColor getPlayerPreferredColor(Player player) {
+        UUID uuid = player.getUniqueId();
+        return playerColors.getOrDefault(uuid, ChatColor.WHITE);
+    }
     private void createDefaultPlayerTitlesConfig() {
         // Save the default configuration to the file
         savePlayerTitlesConfig();
@@ -215,8 +224,23 @@ public class TitleManager {
     }
 
     private void savePlayerTitlesConfig() {
-        // Save the configuration to file
         try {
+            playerTitlesConfig.set("granted_titles", null); // Clear existing data
+            grantedTitles.forEach((uuid, titles) -> {
+                List<String> titleList = new ArrayList<>(titles);
+                playerTitlesConfig.set("granted_titles." + uuid.toString(), titleList);
+            });
+
+            // Save last used titles
+            lastUsedTitles.forEach((uuid, title) -> {
+                playerTitlesConfig.set("last_used_titles." + uuid.toString(), title);
+            });
+
+            // Save player colors
+            playerColors.forEach((uuid, color) -> {
+                playerTitlesConfig.set("player_colors." + uuid.toString(), color.name());
+            });
+
             playerTitlesConfig.save(playerTitlesFile);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save player_titles.yml!");

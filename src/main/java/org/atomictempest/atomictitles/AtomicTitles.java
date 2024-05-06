@@ -24,8 +24,7 @@ public final class AtomicTitles extends JavaPlugin {
         // Register PlayerListeners
         new PlayerListeners(this, titleManager);
 
-        // Example logging to indicate plugin has fully enabled
-        logger.info("AtomicTitles are shutting down!");
+
     }
 
     @Override

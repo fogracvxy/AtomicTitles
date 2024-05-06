@@ -96,7 +96,6 @@ public class TitleCommandExecutor implements CommandExecutor {
                     return true;
                 }
                 setPlayerColor(player, color);
-                player.sendMessage("Your display name color has been set to " + color.name());
                 break;
             default:
                 return false;
@@ -124,14 +123,20 @@ public class TitleCommandExecutor implements CommandExecutor {
             Title title = titleManager.getTitle(titleName);
             if (title != null) {
                 String prefix = ChatColor.translateAlternateColorCodes('&', title.getPrefix());
-                player.setDisplayName(prefix + " " + player.getName());
-                player.sendMessage("Title set to: " + ChatColor.stripColor(prefix) + titleName);
+                String suffix = ChatColor.translateAlternateColorCodes('&', title.getSuffix());
+                ChatColor playerColor = titleManager.getPlayerPreferredColor(player);
+                String displayName = prefix + playerColor + player.getName() + suffix;
+                player.setDisplayName(displayName);
+                player.sendMessage("Title set to: " + ChatColor.stripColor(displayName));
+
+                // Save the last used title for the player
                 titleManager.setLastUsedTitle(player, titleName);
             }
         } else {
             player.sendMessage("You do not have the title: " + titleName);
         }
     }
+
 
     private void grantTitleToPlayer(Player player, String titleName, String targetPlayerName) {
         // Check if the player has the permission to grant titles
@@ -186,8 +191,9 @@ public class TitleCommandExecutor implements CommandExecutor {
 
 
     private void setPlayerColor(Player player, ChatColor color) {
-        titleManager.setPlayerColor(player, color);
-        updatePlayerDisplayName(player);
+        titleManager.setPlayerPreferredColor(player, color);
+        updatePlayerDisplayName(player); // Update display name with new preferred color
+        player.sendMessage("Your preferred display name color has been set to " + color.name());
     }
 
     private void updatePlayerDisplayName(Player player) {
