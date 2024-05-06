@@ -7,8 +7,17 @@ description: Chat Titles plugin for prefixes and suffixes
 website: https://www.mspudicdesign.com
 permissions:
   atomictitles.grant:
-    description: Permission to grant titles to other players
-    default: op  # Default permission level required (e.g., op or true)
+    description: Allows players to grant titles to other players.
+    default: op
+  atomictitles.use:
+    description: Allows players to use granted titles.
+    default: true
+  atomictitles.revoke:
+    description: Allows players to revoke titles from other players.
+    default: op
+  atomictitles.list:
+    description: Allows players to list their granted titles.
+    default: true
 commands:
   title:
     description: Manage custom titles

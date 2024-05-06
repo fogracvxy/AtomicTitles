@@ -44,16 +44,18 @@ public class TitleManager {
     private void loadTitles() {
         titlesConfig = YamlConfiguration.loadConfiguration(titlesFile);
 
-        // Create default titles configuration if it doesn't exist
-        if (!titlesFile.exists()) {
+        // Create default titles configuration if it doesn't exist or is empty
+        if (!titlesFile.exists() || titlesConfig.getConfigurationSection("titles") == null) {
             createDefaultTitlesConfig();
+            // Reload configuration after creating defaults
+            titlesConfig = YamlConfiguration.loadConfiguration(titlesFile);
         }
 
         titles.clear();
 
         // Load titles from the configuration file
-        if (titlesConfig.isConfigurationSection("titles")) {
-            ConfigurationSection titlesSection = titlesConfig.getConfigurationSection("titles");
+        ConfigurationSection titlesSection = titlesConfig.getConfigurationSection("titles");
+        if (titlesSection != null) {
             for (String key : titlesSection.getKeys(false)) {
                 String prefix = titlesSection.getString(key + ".prefix");
                 String suffix = titlesSection.getString(key + ".suffix");
@@ -66,9 +68,11 @@ public class TitleManager {
     private void loadPlayerTitles() {
         playerTitlesConfig = YamlConfiguration.loadConfiguration(playerTitlesFile);
 
-        // Create default player titles configuration if it doesn't exist
+        // Create default player titles configuration if it doesn't exist or is empty
         if (!playerTitlesFile.exists()) {
             createDefaultPlayerTitlesConfig();
+            // Reload configuration after creating defaults
+            playerTitlesConfig = YamlConfiguration.loadConfiguration(playerTitlesFile);
         }
 
         grantedTitles.clear();
@@ -76,8 +80,8 @@ public class TitleManager {
         playerColors.clear();
 
         // Load granted titles from the configuration file
-        if (playerTitlesConfig.isConfigurationSection("granted_titles")) {
-            ConfigurationSection grantedTitlesSection = playerTitlesConfig.getConfigurationSection("granted_titles");
+        ConfigurationSection grantedTitlesSection = playerTitlesConfig.getConfigurationSection("granted_titles");
+        if (grantedTitlesSection != null) {
             for (String uuidString : grantedTitlesSection.getKeys(false)) {
                 UUID uuid = UUID.fromString(uuidString);
                 Set<String> playerTitles = new HashSet<>(grantedTitlesSection.getStringList(uuidString));
@@ -86,8 +90,8 @@ public class TitleManager {
         }
 
         // Load last used titles from the configuration file
-        if (playerTitlesConfig.isConfigurationSection("last_used_titles")) {
-            ConfigurationSection lastUsedTitlesSection = playerTitlesConfig.getConfigurationSection("last_used_titles");
+        ConfigurationSection lastUsedTitlesSection = playerTitlesConfig.getConfigurationSection("last_used_titles");
+        if (lastUsedTitlesSection != null) {
             for (String uuidString : lastUsedTitlesSection.getKeys(false)) {
                 UUID uuid = UUID.fromString(uuidString);
                 String lastUsedTitle = lastUsedTitlesSection.getString(uuidString);
@@ -96,8 +100,8 @@ public class TitleManager {
         }
 
         // Load player colors from the configuration file
-        if (playerTitlesConfig.isConfigurationSection("player_colors")) {
-            ConfigurationSection playerColorsSection = playerTitlesConfig.getConfigurationSection("player_colors");
+        ConfigurationSection playerColorsSection = playerTitlesConfig.getConfigurationSection("player_colors");
+        if (playerColorsSection != null) {
             for (String uuidString : playerColorsSection.getKeys(false)) {
                 UUID uuid = UUID.fromString(uuidString);
                 String colorString = playerColorsSection.getString(uuidString);
@@ -106,7 +110,6 @@ public class TitleManager {
             }
         }
     }
-
 
     private void createDefaultTitlesConfig() {
         titlesConfig.set("titles.warrior.prefix", "&4[Warrior] ");
@@ -142,17 +145,27 @@ public class TitleManager {
 
     public void grantTitle(Player player, String name) {
         UUID uuid = player.getUniqueId();
-        Set<String> playerTitles = grantedTitles.computeIfAbsent(uuid, k -> new HashSet<>());
-        playerTitles.add(name.toLowerCase());
-        savePlayerTitlesConfig(); // Save granted titles to persistent storage
+        if (titles.containsKey(name.toLowerCase())) {
+            Set<String> playerTitles = grantedTitles.computeIfAbsent(uuid, k -> new HashSet<>());
+            playerTitles.add(name.toLowerCase());
+            savePlayerTitlesConfig(); // Save granted titles to persistent storage
+        } else {
+            player.sendMessage(ChatColor.RED + "Title not found: " + name);
+        }
     }
 
     public void revokeTitle(Player player, String name) {
         UUID uuid = player.getUniqueId();
         Set<String> playerTitles = grantedTitles.get(uuid);
-        if (playerTitles != null) {
-            playerTitles.remove(name.toLowerCase());
+        if (playerTitles != null && playerTitles.remove(name.toLowerCase())) {
+            // If the title was successfully removed from the player's granted titles
             savePlayerTitlesConfig(); // Save granted titles to persistent storage
+
+            // Check and update lastUsedTitle if necessary
+            String lastUsedTitle = lastUsedTitles.get(uuid);
+            if (lastUsedTitle != null && lastUsedTitle.equalsIgnoreCase(name.toLowerCase())) {
+                setLastUsedTitle(player, ""); // Clear last used title for the player
+            }
         }
     }
 
@@ -181,14 +194,6 @@ public class TitleManager {
     }
 
     private void saveTitlesConfig() {
-        titlesConfig.set("titles", null);
-        for (Map.Entry<String, Title> entry : titles.entrySet()) {
-            String key = entry.getKey();
-            Title title = entry.getValue();
-            titlesConfig.set("titles." + key + ".prefix", title.getPrefix());
-            titlesConfig.set("titles." + key + ".suffix", title.getSuffix());
-        }
-
         // Save the configuration to file
         try {
             titlesConfig.save(titlesFile);
@@ -197,6 +202,7 @@ public class TitleManager {
             e.printStackTrace();
         }
     }
+
     public void setPlayerColor(Player player, ChatColor color) {
         UUID uuid = player.getUniqueId();
         playerColors.put(uuid, color);
@@ -207,28 +213,8 @@ public class TitleManager {
         UUID uuid = player.getUniqueId();
         return playerColors.getOrDefault(uuid, ChatColor.WHITE);
     }
+
     private void savePlayerTitlesConfig() {
-        playerTitlesConfig.set("granted_titles", null);
-        for (Map.Entry<UUID, Set<String>> entry : grantedTitles.entrySet()) {
-            UUID uuid = entry.getKey();
-            Set<String> playerTitles = entry.getValue();
-            playerTitlesConfig.set("granted_titles." + uuid.toString(), new ArrayList<>(playerTitles));
-        }
-
-        playerTitlesConfig.set("last_used_titles", null);
-        for (Map.Entry<UUID, String> entry : lastUsedTitles.entrySet()) {
-            UUID uuid = entry.getKey();
-            String lastUsedTitle = entry.getValue();
-            playerTitlesConfig.set("last_used_titles." + uuid.toString(), lastUsedTitle);
-        }
-
-        playerTitlesConfig.set("player_colors", null);
-        for (Map.Entry<UUID, ChatColor> entry : playerColors.entrySet()) {
-            UUID uuid = entry.getKey();
-            ChatColor color = entry.getValue();
-            playerTitlesConfig.set("player_colors." + uuid.toString(), color.name());
-        }
-
         // Save the configuration to file
         try {
             playerTitlesConfig.save(playerTitlesFile);
@@ -236,5 +222,9 @@ public class TitleManager {
             plugin.getLogger().warning("Failed to save player_titles.yml!");
             e.printStackTrace();
         }
+    }
+
+    public void updateAndSavePlayerTitles() {
+        savePlayerTitlesConfig();
     }
 }

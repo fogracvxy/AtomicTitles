@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.UUID;
 public class TitleCommandExecutor implements CommandExecutor {
     private final TitleManager titleManager;
     private final AtomicTitles plugin;
@@ -36,9 +36,17 @@ public class TitleCommandExecutor implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "list":
+                if (!player.hasPermission("atomictitles.list")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+                    return true;
+                }
                 displayAvailableTitles(player);
                 break;
             case "use":
+                if (!player.hasPermission("atomictitles.use")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+                    return true;
+                }
                 if (args.length < 2) {
                     player.sendMessage("Usage: /title use <title_name>");
                     return true;
@@ -47,6 +55,10 @@ public class TitleCommandExecutor implements CommandExecutor {
                 useTitle(player, selectedTitle);
                 break;
             case "grant":
+                if (!player.hasPermission("atomictitles.grant")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+                    return true;
+                }
                 if (args.length < 3) {
                     player.sendMessage("Usage: /title grant <title_name> <player_name>");
                     return true;
@@ -56,6 +68,10 @@ public class TitleCommandExecutor implements CommandExecutor {
                 grantTitleToPlayer(player, titleName, targetPlayerName);
                 break;
             case "revoke":
+                if (!player.hasPermission("atomictitles.revoke")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+                    return true;
+                }
                 if (args.length < 3) {
                     player.sendMessage("Usage: /title revoke <title_name> <player_name>");
                     return true;
@@ -88,6 +104,7 @@ public class TitleCommandExecutor implements CommandExecutor {
 
         return true;
     }
+
 
     private void displayAvailableTitles(Player player) {
         Set<String> grantedTitles = titleManager.getGrantedTitles(player);
@@ -146,9 +163,27 @@ public class TitleCommandExecutor implements CommandExecutor {
             return;
         }
 
+        // Revoke the title from the target player
         titleManager.revokeTitle(targetPlayer, titleName);
         player.sendMessage("Title revoked: " + titleName + " from " + targetPlayerName);
+
+        // Get the UUID of the target player
+        UUID targetPlayerUUID = targetPlayer.getUniqueId();
+        if (targetPlayerUUID == null) {
+            player.sendMessage("Failed to get UUID for player: " + targetPlayerName);
+            return;
+        }
+
+        // Update lastUsedTitle if it matches the revoked title for the target player
+        String lastUsedTitle = titleManager.getLastUsedTitle(targetPlayer);
+        if (lastUsedTitle != null && lastUsedTitle.equalsIgnoreCase(titleName)) {
+            titleManager.setLastUsedTitle(targetPlayer, ""); // Clear last used title
+            titleManager.updateAndSavePlayerTitles(); // Save changes to player_titles.yml
+        }
     }
+
+
+
 
     private void setPlayerColor(Player player, ChatColor color) {
         titleManager.setPlayerColor(player, color);
