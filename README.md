@@ -17,6 +17,7 @@ AtomicTitles is a Bukkit/Spigot plugin that enhances player titles and display n
     - `/title list`: View available titles.
     - `/title use <title_name>`: Use a granted title.
     - `/title grant <title_name> <player_name>`: Grant a title to another player.
+    - `/title color <color_name> `: Change name color.
 
 ## Upcoming Features
 
