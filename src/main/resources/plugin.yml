@@ -1,0 +1,7 @@
+name: AtomicTitles
+version: '${project.version}'
+main: org.atomictempest.atomictitles.AtomicTitles
+api-version: '1.20'
+authors: [AtomicTempest]
+description: Chat Titles plugin for prefixes and suffixes
+website: https://www.mspudicdesign.com
