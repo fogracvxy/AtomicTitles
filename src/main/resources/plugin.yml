@@ -5,3 +5,11 @@ api-version: '1.20'
 authors: [AtomicTempest]
 description: Chat Titles plugin for prefixes and suffixes
 website: https://www.mspudicdesign.com
+permissions:
+  atomictitles.grant:
+    description: Permission to grant titles to other players
+    default: op  # Default permission level required (e.g., op or true)
+commands:
+  title:
+    description: Manage custom titles
+    usage: /title <list|grant|use|> [args]

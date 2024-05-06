@@ -1,17 +1,42 @@
 package org.atomictempest.atomictitles;
 
+import org.atomictempest.atomictitles.commands.TitleCommandExecutor;
+import org.atomictempest.atomictitles.listeners.PlayerListeners;
 import org.bukkit.plugin.java.JavaPlugin;
+import java.util.logging.Logger;
 
 public final class AtomicTitles extends JavaPlugin {
-
+    private TitleManager titleManager;
+    private Logger logger; // Logger instance for plugin
     @Override
     public void onEnable() {
-        // Plugin startup logic
+        logger = getLogger();
 
+        logger.info("AtomicTitles are starting!");
+
+        // Initialize TitleManager
+        titleManager = new TitleManager(this);
+
+        // Register TitleCommandExecutor for the "title" command
+        getCommand("title").setExecutor(new TitleCommandExecutor(this, titleManager));
+
+
+        // Register PlayerListeners
+        new PlayerListeners(this, titleManager);
+
+        // Example logging to indicate plugin has fully enabled
+        logger.info("AtomicTitles are shutting down!");
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        logger.info("AtomicTitles are shutting down!");
+
+        // Perform any cleanup tasks if needed
+    }
+
+    public TitleManager getTitleManager() {
+        return titleManager;
     }
 }
+
